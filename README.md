@@ -1,1 +1,1 @@
-Readme.md de ejemplo
+Guía de supervivencia para videojuegos — UNRAF. Explorá el minimapa, abrí checkpoints y marcá tu avance.
