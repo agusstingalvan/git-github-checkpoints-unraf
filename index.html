@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git y GitHub — Checkpoints UNRAF</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Nunito:wght@400;700;800&display=swap');
+
+    :root {
+      --paper: #fffdf7;
+      --ink: #111111;
+      --blue: #5aa9e6;
+      --yellow: #ffd84d;
+      --green: #7bd389;
+      --red: #ff8c8c;
+      --gray: #ece7db;
+      --shadow: 0 12px 30px rgba(0,0,0,.08);
+      --radius: 22px;
+      --doodle: repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.03) 0px,
+        rgba(0,0,0,0.03) 1px,
+        transparent 1px,
+        transparent 30px
+      );
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Nunito', system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255,216,77,.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(90,169,230,.16), transparent 22%),
+        radial-gradient(circle at bottom left, rgba(123,211,137,.12), transparent 24%),
+        var(--paper);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--doodle);
+      pointer-events: none;
+      opacity: .7;
+    }
+
+    .app {
+      position: relative;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 22px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(8px);
+      border: 3px solid #111;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 2px dashed rgba(0,0,0,.08);
+      border-radius: calc(var(--radius) - 10px);
+      pointer-events: none;
+    }
+
+    .sidebar {
+      padding: 22px;
+      position: sticky;
+      top: 20px;
+      align-self: start;
+    }
+
+    .title {
+      font-family: 'Patrick Hand', cursive;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+      margin: 0 0 10px;
+      transform: rotate(-1deg);
+    }
+
+    .subtitle {
+      margin: 0 0 16px;
+      font-size: 1rem;
+      max-width: 28ch;
+    }
+
+    .pill {
+      display: inline-block;
+      border: 2px solid #111;
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: var(--yellow);
+      font-weight: 800;
+      transform: rotate(-2deg);
+      margin-bottom: 16px;
+    }
+
+    .progress-wrap {
+      margin: 14px 0 18px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 18px;
+      border: 3px solid #111;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--green),
+        var(--green) 12px,
+        #97e8a4 12px,
+        #97e8a4 24px
+      );
+      transition: width .45s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 2px solid #111;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #111;
+      flex: 0 0 auto;
+    }
+
+    .dot.basic { background: var(--blue); }
+    .dot.cloud { background: var(--yellow); }
+    .dot.tools { background: var(--green); }
+    .dot.done { background: #111; }
+
+    .reset-btn {
+      width: 100%;
+      margin-top: 18px;
+      border: 3px solid #111;
+      border-radius: 16px;
+      background: #fff;
+      padding: 12px 14px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+      box-shadow: 0 6px 0 #111;
+    }
+
+    .reset-btn:hover,
+    .reset-btn:focus-visible {
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    .reset-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #111; }
+
+    .content {
+      padding: 20px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .hero {
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .hero h2 {
+      font-family: 'Patrick Hand', cursive;
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin: 0 0 8px;
+      transform: rotate(-1.2deg);
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 1.04rem;
+      max-width: 60ch;
+    }
+
+    .scribble-card {
+      border: 3px solid #111;
+      border-radius: 22px;
+      background: #fff;
+      padding: 16px;
+      transform: rotate(1.4deg);
+      box-shadow: 0 10px 20px rgba(0,0,0,.08);
+    }
+
+    .scribble-card h3 {
+      margin: 0 0 10px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.8rem;
+    }
+
+    .scribble-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .map {
+      position: relative;
+      padding: 24px;
+      min-height: 460px;
+      overflow: hidden;
+    }
+
+    .map-title {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 2.1rem;
+      margin: 0 0 12px;
+      transform: rotate(-1deg);
+    }
+
+    .trail {
+      position: absolute;
+      inset: 84px 28px 28px 28px;
+      pointer-events: none;
+    }
+
+    .trail svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .trail path {
+      fill: none;
+      stroke: #111;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 10 18;
+      opacity: .25;
+      animation: moveTrail 18s linear infinite;
+    }
+
+    @keyframes moveTrail {
+      to { stroke-dashoffset: -220; }
+    }
+
+    .checkpoints {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 24px 14px;
+      padding-top: 18px;
+    }
+
+    .checkpoint {
+      position: relative;
+      z-index: 1;
+      border: 3px solid #111;
+      border-radius: 22px;
+      background: #fff;
+      padding: 14px 10px 12px;
+      min-height: 118px;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 8px 0 #111;
+      transition: transform .18s ease, box-shadow .18s ease, background .2s ease;
+      animation: floaty 3.2s ease-in-out infinite;
+      font: inherit;
+    }
+
+    .checkpoint:nth-child(odd) { animation-delay: .25s; }
+    .checkpoint:nth-child(3n) { animation-delay: .6s; }
+
+    @keyframes floaty {
+      0%,100% { transform: translateY(0px) rotate(-1deg); }
+      50% { transform: translateY(-5px) rotate(1deg); }
+    }
+
+    .checkpoint:hover,
+    .checkpoint:focus-visible {
+      transform: translateY(-5px) scale(1.02) rotate(0deg);
+      box-shadow: 0 12px 0 #111;
+      outline: none;
+    }
+
+    .checkpoint:active { transform: translateY(3px); box-shadow: 0 3px 0 #111; }
+
+    .checkpoint.active { background: #fff8dd; }
+    .checkpoint.completed { background: #eefdf0; }
+    .checkpoint.basic { border-color: #111; }
+    .checkpoint.basic .cp-badge { background: var(--blue); }
+    .checkpoint.cloud .cp-badge { background: var(--yellow); }
+    .checkpoint.tools .cp-badge { background: var(--green); }
+
+    .cp-badge {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #111;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 8px;
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+
+    .cp-name {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.3rem;
+      line-height: 1.05;
+      margin-bottom: 4px;
+    }
+
+    .cp-type {
+      font-size: .86rem;
+      opacity: .8;
+      font-weight: 800;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      padding: 22px;
+    }
+
+    .details-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .details h3 {
+      margin: 0;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 2rem;
+    }
+
+    .toggle-complete {
+      border: 3px solid #111;
+      border-radius: 16px;
+      background: var(--green);
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #111;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .toggle-complete:hover,
+    .toggle-complete:focus-visible { transform: translateY(-2px); outline: none; }
+    .toggle-complete:active { transform: translateY(3px); box-shadow: 0 2px 0 #111; }
+
+    .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tag {
+      border: 2px solid #111;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-weight: 800;
+      background: #fff;
+    }
+
+    .objective {
+      border-left: 6px solid #111;
+      padding: 14px 16px;
+      background: #fff;
+      border-radius: 16px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      background: #fff;
+      border: 2px solid #111;
+      border-radius: 18px;
+      padding: 14px;
+      transition: transform .18s ease;
+    }
+
+    .step:hover { transform: translateX(3px); }
+
+    .step-num {
+      width: 42px;
+      height: 42px;
+      border: 3px solid #111;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      background: var(--yellow);
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.3rem;
+    }
+
+    .code-card {
+      background: #111;
+      color: #f7f4ea;
+      border-radius: 18px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.08);
+    }
+
+    .code-card::before {
+      content: "● ● ●";
+      color: #f7c948;
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      letter-spacing: 5px;
+      font-size: .9rem;
+    }
+
+    pre {
+      margin: 18px 0 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .96rem;
+      line-height: 1.55;
+    }
+
+    .code-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .copy-btn {
+      border: 2px solid #fff;
+      background: transparent;
+      color: #fff;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background .18s ease, transform .18s ease;
+    }
+
+    .copy-btn:hover,
+    .copy-btn:focus-visible { background: rgba(255,255,255,.12); transform: translateY(-1px); outline: none; }
+
+    .tip-box, .tool-box {
+      border: 2px solid #111;
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+
+    .tip-box strong,
+    .tool-box strong {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.4rem;
+    }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: #111;
+      color: #fff;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-weight: 800;
+      transform: translateY(120px);
+      opacity: 0;
+      transition: .3s ease;
+      z-index: 50;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .empty-state {
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: #fff;
+      border: 2px dashed #111;
+      border-radius: 18px;
+      padding: 20px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.7rem;
+    }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .hero { grid-template-columns: 1fr; }
+      .checkpoints { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .app { padding: 14px; }
+      .content, .sidebar, .details, .hero, .map { padding: 16px; }
+      .checkpoints { grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 14px; }
+      .step { grid-template-columns: 1fr; }
+      .trail { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel sidebar">
+      <div class="pill">Material: Desarrollo Tecnológico 2</div>
+      <h1 class="title">Git y GitHub</h1>
+      <p class="subtitle">Guía de supervivencia para videojuegos — UNRAF. Explorá el minimapa, abrí checkpoints y marcá tu avance.</p>
+
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span>Progreso del jugador</span>
+          <span id="progressText">0%</span>
+        </div>
+        <div class="progress-bar" aria-hidden="true">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="dot basic"></span> Comandos básicos</div>
+        <div class="legend-item"><span class="dot cloud"></span> GitHub / nube</div>
+        <div class="legend-item"><span class="dot tools"></span> Herramientas alternativas</div>
+        <div class="legend-item"><span class="dot done"></span> Checkpoint completado</div>
+      </div>
+
+      <button class="reset-btn" id="resetProgress">Reiniciar avance</button>
+    </aside>
+
+    <main class="content">
+      <section class="panel hero">
+        <div>
+          <h2>Mini mapa de checkpoints</h2>
+          <p>
+            Git es como una mezcla entre <strong>máquina del tiempo</strong>, <strong>cámara de fotos</strong> y <strong>checkpoint de videojuego</strong>. Cada ejercicio te lleva un paso más cerca de trabajar de manera profesional, sin depender de archivos sueltos, pendrives o mensajes en Discord.
+          </p>
+        </div>
+        <div class="scribble-card" aria-hidden="true">
+          <h3>Qué vas a practicar</h3>
+          <ul>
+            <li>Crear tu repo local</li>
+            <li>Hacer commits con sentido</li>
+            <li>Subir un proyecto a GitHub</li>
+            <li>Comparar consola, VSCode y GitHub Desktop</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel map">
+        <h2 class="map-title">Ruta del jugador</h2>
+        <div class="trail" aria-hidden="true">
+          <svg viewBox="0 0 1000 340" preserveAspectRatio="none">
+            <path d="M40,70 C160,20 220,140 330,100 C450,60 470,200 610,160 C740,120 770,280 930,220" />
+          </svg>
+        </div>
+        <div class="checkpoints" id="checkpointGrid"></div>
+      </section>
+
+      <section class="panel details" id="detailsPanel">
+        <div class="empty-state">Elegí un checkpoint del minimapa para ver el paso a paso ✍️</div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast">Copiado al portapapeles</div>
+
+  <script>
+    const checkpoints = [
+      {
+        id: 'cp1',
+        number: 1,
+        type: 'basic',
+        label: 'Básico',
+        title: 'Mi primer checkpoint',
+        objective: 'Entender qué hace Git al iniciar un repositorio y crear el primer commit.',
+        steps: [
+          'Creá una carpeta llamada <code>mi-primer-juego</code>. Puede ser desde el explorador o desde la terminal.',
+          'Dentro de esa carpeta creá un archivo <code>index.html</code>. Escribí algo mínimo, por ejemplo un título del juego.',
+          'Abrí la carpeta con la herramienta que prefieras: terminal, VSCode o GitHub Desktop.',
+          'Inicializá Git, revisá el estado, agregá los archivos y creá el primer commit.'
+        ],
+        commands: 'git init\ngit status\ngit add .\ngit commit -m "Primer checkpoint del juego"',
+        tips: [
+          'Pensá el commit como una foto del proyecto en ese momento.',
+          'Si Git te pide nombre y mail, configurá eso primero con <code>git config</code>.'
+        ],
+        toolExample: 'En VSCode abrí Source Control y vas a ver los archivos para stagear y commitear. En GitHub Desktop podés crear el repo desde “Create New Repository”.'
+      },
+      {
+        id: 'cp2',
+        number: 2,
+        type: 'basic',
+        label: 'Básico',
+        title: 'Evolución del juego',
+        objective: 'Practicar varios commits para entender el historial de cambios.',
+        steps: [
+          'Agregá una línea nueva al HTML, por ejemplo <code>&lt;p&gt;Personaje agregado&lt;/p&gt;</code>.',
+          'Guardá el archivo y hacé un commit describiendo ese avance.',
+          'Agregá otra mejora, por ejemplo <code>&lt;p&gt;Nivel 1 agregado&lt;/p&gt;</code>.',
+          'Volvé a commitear y finalmente revisá el historial con <code>git log</code>.'
+        ],
+        commands: 'git add .\ngit commit -m "Agrego personaje"\n\ngit add .\ngit commit -m "Agrego nivel 1"\n\ngit log',
+        tips: [
+          'Un commit por idea clara. No mezcles cambios distintos en el mismo commit.',
+          'El mensaje del commit debería ayudarte a entender qué pasó sin abrir el código.'
+        ],
+        toolExample: 'En GitHub Desktop vas a escribir el summary del commit abajo a la izquierda. En VSCode el mensaje va arriba del panel de Source Control.'
+      },
+      {
+        id: 'cp3',
+        number: 3,
+        type: 'basic',
+        label: 'Básico',
+        title: 'Romper y volver atrás',
+        objective: 'Perder el miedo a equivocarse y aprender a restaurar cambios no guardados.',
+        steps: [
+          'Modificá tu archivo de forma incorrecta a propósito: borrá líneas o escribí cualquier cosa.',
+          'Ejecutá <code>git status</code> para confirmar que Git detecta cambios.',
+          'Restaurá la versión anterior del archivo.',
+          'Volvé a abrir el archivo y comprobá que regresó al último estado guardado en Git.'
+        ],
+        commands: 'git status\ngit restore .',
+        tips: [
+          'En recursos viejos quizás aparezca <code>git checkout .</code>. Hoy suele preferirse <code>git restore .</code>.',
+          'Este ejercicio demuestra por qué Git te deja experimentar sin tanto miedo.'
+        ],
+        toolExample: 'En VSCode podés hacer click derecho sobre el archivo cambiado y elegir “Discard Changes”. En GitHub Desktop aparece “Discard changes…”.'
+      },
+      {
+        id: 'cp4',
+        number: 4,
+        type: 'cloud',
+        label: 'Nube',
+        title: 'Crear repo en GitHub',
+        objective: 'Conectar un repositorio local con uno remoto en GitHub.',
+        steps: [
+          'Entrá a GitHub y creá una cuenta si todavía no tenés una.',
+          'Creá un repositorio nuevo llamado <code>mi-primer-juego</code>. En este ejercicio conviene no inicializarlo con README para evitar conflictos iniciales.',
+          'Copiá la URL del repositorio remoto.',
+          'Desde la terminal, vinculá tu repo local con GitHub y hacé el primer push.'
+        ],
+        commands: 'git remote add origin https://github.com/USUARIO/mi-primer-juego.git\ngit branch -M main\ngit push -u origin main',
+        tips: [
+          'Usá nombre y correo profesional para tu cuenta. Es parte de tu identidad como futuro profesional.',
+          'Git es local; GitHub es el servicio en la nube que te permite compartir y respaldar.'
+        ],
+        toolExample: 'En GitHub Desktop podés publicar el repositorio con “Publish repository”. En VSCode suele aparecer un botón “Publish to GitHub”.'
+      },
+      {
+        id: 'cp5',
+        number: 5,
+        type: 'cloud',
+        label: 'Nube',
+        title: 'Clonar un repositorio',
+        objective: 'Simular que bajás un proyecto desde otra máquina o desde la compu de un compañero.',
+        steps: [
+          'Copiá la URL de un repositorio de GitHub.',
+          'Elegí una carpeta donde querés descargar el proyecto.',
+          'Usá el comando de clone.',
+          'Abrí la carpeta clonada y verificá que el proyecto tiene historial Git desde el inicio.'
+        ],
+        commands: 'git clone URL_DEL_REPO',
+        tips: [
+          'Clonar trae los archivos y también toda la historia del proyecto.',
+          'Es distinto de descargar un ZIP, porque el ZIP no trae el historial Git.'
+        ],
+        toolExample: 'GitHub Desktop tiene “Clone repository”. En VSCode podés abrir la paleta de comandos y usar “Git: Clone”.'
+      },
+      {
+        id: 'cp6',
+        number: 6,
+        type: 'cloud',
+        label: 'Colaboración',
+        title: 'Trabajo en equipo',
+        objective: 'Practicar el flujo mínimo para colaborar con otra persona sin pisarse cambios.',
+        steps: [
+          'Trabajen en parejas. Una persona crea <code>player.js</code> y la otra <code>enemy.js</code>.',
+          'Antes de arrancar, hagan <code>git pull</code> para traer la última versión.',
+          'Cada integrante hace sus cambios, agrega archivos y crea un commit claro.',
+          'Suban los cambios con <code>git push</code> y revisen que ambos archivos quedaron en el repo.'
+        ],
+        commands: 'git pull\ngit add .\ngit commit -m "Agrego player o enemy"\ngit push',
+        tips: [
+          'Hacer pull antes de trabajar evita varios conflictos tontos.',
+          'En equipos reales conviene además trabajar con ramas para no tocar siempre main.'
+        ],
+        toolExample: 'En VSCode vas a ver Sync Changes. En GitHub Desktop el flujo habitual es Fetch/Pull, luego Commit y Push origin.'
+      },
+      {
+        id: 'cp7',
+        number: 7,
+        type: 'tools',
+        label: 'Herramientas',
+        title: 'Modo ninja: consola',
+        objective: 'Resolver un flujo completo usando solo terminal.',
+        steps: [
+          'Creá o abrí un repo existente desde la terminal.',
+          'Hacé un cambio real en el proyecto.',
+          'Usá comandos para ver el estado, agregar archivos, commitear y subir cambios.',
+          'Si te animás, creá una rama y hacé merge luego de probarla.'
+        ],
+        commands: 'git status\ngit add .\ngit commit -m "Cambio realizado desde consola"\ngit push',
+        tips: [
+          'La consola te da control preciso y te ayuda a entender qué está pasando de verdad.',
+          'Aunque luego uses interfaz visual, saber terminal te salva cuando algo sale raro.'
+        ],
+        toolExample: 'Este modo es ideal para entender la lógica real de Git y para trabajar rápido cuando ya dominás los comandos.'
+      },
+      {
+        id: 'cp8',
+        number: 8,
+        type: 'tools',
+        label: 'Herramientas',
+        title: 'Git en VSCode',
+        objective: 'Usar la integración de Git en el editor para ver cambios de forma visual.',
+        steps: [
+          'Abrí la carpeta del proyecto en VSCode.',
+          'Entrá a la pestaña <em>Source Control</em>. Ahí vas a ver los archivos modificados.',
+          'Escribí un mensaje de commit y confirmalo desde la interfaz.',
+          'Usá las opciones de sincronización o push para enviar cambios a GitHub.'
+        ],
+        commands: 'Atajo visual: Source Control → Stage Changes → Commit → Sync / Push',
+        tips: [
+          'VSCode es un gran punto medio: visual, pero cerca del flujo real.',
+          'Es ideal para principiantes que todavía no quieren vivir en la terminal.'
+        ],
+        toolExample: 'Probá comparar el mismo cambio en terminal y en VSCode para identificar qué botones equivalen a cada comando.'
+      },
+      {
+        id: 'cp9',
+        number: 9,
+        type: 'tools',
+        label: 'Herramientas',
+        title: 'GitHub Desktop',
+        objective: 'Recorrer un flujo amigable y 100% visual para quienes recién arrancan.',
+        steps: [
+          'Abrí GitHub Desktop y cloná o agregá un repositorio.',
+          'Modificá uno o más archivos en tu editor.',
+          'Volvé a GitHub Desktop y revisá el diff visual.',
+          'Escribí el commit, hacé click en commit y luego en push.'
+        ],
+        commands: 'Flujo visual: Open repo → revisar cambios → escribir summary → Commit to main → Push origin',
+        tips: [
+          'GitHub Desktop baja bastante la fricción inicial.',
+          'Aunque no veas comandos, el flujo conceptual sigue siendo el mismo: add/commit/push.'
+        ],
+        toolExample: 'Hacé el mismo mini ejercicio que en consola y compará qué opción visual corresponde a cada paso.'
+      }
+    ];
+
+    const storageKey = 'unrafGitCheckpointProgress';
+    const selectedKey = 'unrafGitCheckpointSelected';
+
+    const checkpointGrid = document.getElementById('checkpointGrid');
+    const detailsPanel = document.getElementById('detailsPanel');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const toast = document.getElementById('toast');
+    const resetBtn = document.getElementById('resetProgress');
+
+    const state = {
+      completed: loadCompleted(),
+      selected: localStorage.getItem(selectedKey) || checkpoints[0].id
+    };
+
+    function loadCompleted() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        return Array.isArray(saved) ? saved : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCompleted() {
+      localStorage.setItem(storageKey, JSON.stringify(state.completed));
+    }
+
+    function saveSelected() {
+      localStorage.setItem(selectedKey, state.selected);
+    }
+
+    function isCompleted(id) {
+      return state.completed.includes(id);
+    }
+
+    function renderCheckpoints() {
+      checkpointGrid.innerHTML = checkpoints.map(cp => {
+        const active = state.selected === cp.id ? 'active' : '';
+        const completed = isCompleted(cp.id) ? 'completed' : '';
+        return `
+          <button class="checkpoint ${cp.type} ${active} ${completed}" data-id="${cp.id}" aria-label="Abrir checkpoint ${cp.number}: ${cp.title}">
+            <div class="cp-badge">${isCompleted(cp.id) ? '✓' : cp.number}</div>
+            <div class="cp-name">${cp.title}</div>
+            <div class="cp-type">${cp.label}</div>
+          </button>
+        `;
+      }).join('');
+
+      checkpointGrid.querySelectorAll('.checkpoint').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selected = btn.dataset.id;
+          saveSelected();
+          render();
+          detailsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    }
+
+    function renderDetails() {
+      const cp = checkpoints.find(item => item.id === state.selected);
+      if (!cp) return;
+
+      detailsPanel.innerHTML = `
+        <div class="details-head">
+          <div>
+            <h3>${cp.number}. ${cp.title}</h3>
+            <div class="meta-tags">
+              <span class="tag">${cp.label}</span>
+              <span class="tag">${isCompleted(cp.id) ? 'Completado' : 'Pendiente'}</span>
+            </div>
+          </div>
+          <button class="toggle-complete" id="completeBtn">${isCompleted(cp.id) ? 'Desmarcar checkpoint' : 'Marcar como completado'}</button>
+        </div>
+
+        <div class="objective">
+          <strong>Objetivo:</strong> ${cp.objective}
+        </div>
+
+        <div class="steps">
+          ${cp.steps.map((step, index) => `
+            <article class="step">
+              <div class="step-num">${index + 1}</div>
+              <div>${step}</div>
+            </article>
+          `).join('')}
+        </div>
+
+        <div class="code-card">
+          <pre>${escapeHtml(cp.commands)}</pre>
+          <div class="code-actions">
+            <button class="copy-btn" id="copyCommands">Copiar comandos</button>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <strong>Tips</strong>
+          <ul>
+            ${cp.tips.map(tip => `<li>${tip}</li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="tool-box">
+          <strong>Ejemplo según herramienta</strong>
+          <p>${cp.toolExample}</p>
+        </div>
+      `;
+
+      document.getElementById('completeBtn').addEventListener('click', () => {
+        toggleComplete(cp.id);
+      });
+
+      document.getElementById('copyCommands').addEventListener('click', async () => {
+        await copyToClipboard(cp.commands);
+      });
+    }
+
+    function toggleComplete(id) {
+      if (isCompleted(id)) {
+        state.completed = state.completed.filter(item => item !== id);
+      } else {
+        state.completed.push(id);
+      }
+      saveCompleted();
+      render();
+    }
+
+    function updateProgress() {
+      const percent = Math.round((state.completed.length / checkpoints.length) * 100);
+      progressFill.style.width = percent + '%';
+      progressText.textContent = percent + '%';
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('Comandos copiados al portapapeles');
+      } catch {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        temp.remove();
+        showToast('Comandos copiados al portapapeles');
+      }
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    }
+
+    function render() {
+      renderCheckpoints();
+      renderDetails();
+      updateProgress();
+    }
+
+    resetBtn.addEventListener('click', () => {
+      state.completed = [];
+      saveCompleted();
+      render();
+      showToast('Avance reiniciado');
+    });
+
+    render();
+  </script>
+</body>
+</html>
